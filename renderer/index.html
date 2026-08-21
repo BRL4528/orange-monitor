@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<title>orange-monitor</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="frame">
+    <div class="titlebar" id="drag">
+      <span class="dot"></span>
+      <span class="title">SYSTEM // MONITOR</span>
+      <button id="btn-close" title="Fechar">×</button>
+    </div>
+
+    <section class="panel">
+      <h2>Notebook</h2>
+      <div class="row"><span>CPU</span><span id="cpu-val">--%</span></div>
+      <div class="bar"><div id="cpu-bar" class="fill"></div></div>
+
+      <div class="row"><span>RAM</span><span id="ram-val">-- / --</span></div>
+      <div class="bar"><div id="ram-bar" class="fill"></div></div>
+
+      <div class="row"><span>Disco</span><span id="disk-val">-- livre</span></div>
+      <div class="bar"><div id="disk-bar" class="fill"></div></div>
+    </section>
+
+    <section class="panel">
+      <h2>Claude Code</h2>
+      <div class="row"><span>Tokens hoje</span><span id="claude-today">--</span></div>
+      <div class="row"><span>Tokens total</span><span id="claude-total">--</span></div>
+    </section>
+
+    <section class="panel grow">
+      <h2>Central de Agentes</h2>
+      <div class="row"><span>Processos ativos</span><span id="agents-procs">--</span></div>
+      <div class="row"><span>CPU dos agentes</span><span id="agents-cpu">--%</span></div>
+      <div class="row"><span>Tokens (live)</span><span id="agents-tokens">--</span></div>
+      <div id="agents-list" class="agents-list"></div>
+    </section>
+
+    <div class="footer" id="updated">atualizando...</div>
+  </div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>

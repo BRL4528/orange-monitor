@@ -1,0 +1,17 @@
+{
+  "name": "orange-monitor",
+  "version": "1.0.0",
+  "description": "Widget flutuante de monitoramento (CPU/RAM/Disco, tokens Claude e Central de Agentes) - tema dark/orange",
+  "main": "main.js",
+  "author": "brl4528",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron ."
+  },
+  "devDependencies": {
+    "electron": "^43.4.1"
+  },
+  "dependencies": {
+    "systeminformation": "^5.23.5"
+  }
+}
