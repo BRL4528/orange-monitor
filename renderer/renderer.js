@@ -102,7 +102,9 @@ function updateClaudeTokens() {
 
 function updateAgentsConsumption() {
   const data = readJson(AGENTS_CONSUMPTION_PATH);
+  const accountsEl = document.getElementById('agents-accounts');
   const listEl = document.getElementById('agents-list');
+  accountsEl.innerHTML = '';
   listEl.innerHTML = '';
 
   if (!data || !data.workspaces) {
@@ -112,24 +114,42 @@ function updateAgentsConsumption() {
 
   let total = 0;
   const perWorkspace = [];
+  const perAccount = new Map();
 
   for (const ws of Object.values(data.workspaces)) {
     let wsTokens = 0;
+    const wsAccounts = new Set();
+
     for (const rec of Object.values(ws.records || {})) {
-      wsTokens += rec.tokens || 0;
+      const tokens = rec.tokens || 0;
+      wsTokens += tokens;
+      const acc = rec.account || '?';
+      wsAccounts.add(acc);
+      perAccount.set(acc, (perAccount.get(acc) || 0) + tokens);
+    }
+
+    if (wsTokens > 0) {
+      perWorkspace.push({ name: ws.name, tokens: wsTokens, accounts: [...wsAccounts] });
     }
     total += wsTokens;
-    if (wsTokens > 0) perWorkspace.push({ name: ws.name, tokens: wsTokens });
   }
 
   perWorkspace.sort((a, b) => b.tokens - a.tokens);
 
   document.getElementById('agents-tokens').textContent = fmtTokens(total);
 
+  const accounts = [...perAccount.entries()].sort((a, b) => b[1] - a[1]);
+  for (const [account, tokens] of accounts) {
+    const badge = document.createElement('div');
+    badge.className = 'account-badge';
+    badge.innerHTML = `<span>${account}</span><b>${fmtTokens(tokens)}</b>`;
+    accountsEl.appendChild(badge);
+  }
+
   for (const ws of perWorkspace.slice(0, 6)) {
     const item = document.createElement('div');
     item.className = 'agent-item';
-    item.innerHTML = `<span>${ws.name}</span><b>${fmtTokens(ws.tokens)}</b>`;
+    item.innerHTML = `<span>${ws.name} <i>(${ws.accounts.join(', ')})</i></span><b>${fmtTokens(ws.tokens)}</b>`;
     listEl.appendChild(item);
   }
 }

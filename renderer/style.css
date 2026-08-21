@@ -106,6 +106,31 @@ html, body {
   transition: width 0.4s ease;
 }
 
+.accounts-row {
+  display: flex;
+  gap: 6px;
+  margin: 6px 0 2px;
+  flex-wrap: wrap;
+}
+.account-badge {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  font-size: 10px;
+  padding: 2px 7px;
+  border-radius: 10px;
+  background: #ff8c1a1a;
+  border: 1px solid #ff8c1a55;
+  color: #ffd9a8;
+}
+.account-badge b { color: #ffbf5c; }
+
+.agent-item i {
+  color: #f0ead666;
+  font-style: normal;
+  font-size: 10px;
+}
+
 .agents-list {
   margin-top: 6px;
   display: flex;
