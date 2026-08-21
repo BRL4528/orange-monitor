@@ -6,7 +6,7 @@
   "author": "brl4528",
   "license": "MIT",
   "scripts": {
-    "start": "electron ."
+    "start": "electron . --no-sandbox"
   },
   "devDependencies": {
     "electron": "^43.4.1"
