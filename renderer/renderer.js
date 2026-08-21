@@ -20,8 +20,11 @@ const AGENTS_CONSUMPTION_PATH = path.join(
 const AGENT_PROCESS_RE = /claude|codex|gemini|central-agent/i;
 
 const CLAUDE_ACCOUNTS_DIR = path.join(os.homedir(), '.config', 'central-agentes', 'contas', 'claude');
-const USAGE_REFRESH_MS = 60_000;
-const usageCache = new Map(); // account -> { data, error, fetchedAt }
+const USAGE_CHECK_INTERVAL_MS = 30_000; // só verifica se já é hora de tentar de novo
+const USAGE_BASE_REFRESH_MS = 5 * 60_000; // dado muda pouco; não precisa mais que isso
+const USAGE_BASE_BACKOFF_MS = 5 * 60_000; // 1a espera após 429
+const USAGE_MAX_BACKOFF_MS = 30 * 60_000; // teto do backoff (429 desse endpoint é conhecido por travar por horas)
+const usageState = new Map(); // account -> { data, error, fetchedAt, nextAttemptAt, backoffMs }
 
 function readJson(filePath) {
   try {
@@ -223,10 +226,41 @@ function fetchAccountUsage(account) {
 
 async function refreshUsageAll() {
   const accounts = listClaudeAccounts();
+  const now = Date.now();
+
   await Promise.all(
     accounts.map(async (account) => {
+      const prev = usageState.get(account);
+      if (prev && now < prev.nextAttemptAt) return; // ainda em backoff, não bate na API
+
       const result = await fetchAccountUsage(account);
-      usageCache.set(account, { ...result, fetchedAt: Date.now() });
+
+      if (result.data) {
+        usageState.set(account, {
+          data: result.data,
+          error: null,
+          fetchedAt: now,
+          nextAttemptAt: now + USAGE_BASE_REFRESH_MS,
+          backoffMs: USAGE_BASE_BACKOFF_MS
+        });
+        return;
+      }
+
+      const isRateLimited = result.error === 'HTTP 429';
+      const wasAlreadyRateLimited = prev && prev.error === 'HTTP 429';
+      const prevBackoff = (prev && prev.backoffMs) || USAGE_BASE_BACKOFF_MS;
+      const backoffMs =
+        isRateLimited && wasAlreadyRateLimited
+          ? Math.min(prevBackoff * 2, USAGE_MAX_BACKOFF_MS)
+          : USAGE_BASE_BACKOFF_MS;
+
+      usageState.set(account, {
+        data: prev && prev.data, // mantém o último dado bom conhecido
+        error: result.error,
+        fetchedAt: now,
+        nextAttemptAt: now + backoffMs,
+        backoffMs
+      });
     })
   );
 }
@@ -258,7 +292,7 @@ function renderLimitRow(label, pct, resetsAtIso) {
 
 function renderLimits() {
   const container = document.getElementById('limits-container');
-  const accounts = [...usageCache.keys()].sort();
+  const accounts = listClaudeAccounts();
 
   if (accounts.length === 0) {
     container.innerHTML = '<div class="limit-empty">nenhuma conta encontrada</div>';
@@ -267,12 +301,21 @@ function renderLimits() {
 
   container.innerHTML = accounts
     .map((account) => {
-      const entry = usageCache.get(account) || {};
-      if (entry.error) {
-        return `<div class="limit-account"><div class="limit-account-name">${account}</div><div class="limit-empty">indisponível: ${entry.error}</div></div>`;
+      const entry = usageState.get(account);
+      const u = entry && entry.data;
+
+      const errorNote =
+        entry && entry.error
+          ? `<div class="limit-empty">${
+              entry.error === 'HTTP 429' ? 'limite da API' : entry.error
+            } · tenta de novo em ${fmtCountdown(new Date(entry.nextAttemptAt).toISOString())}</div>`
+          : '';
+
+      if (!u) {
+        return `<div class="limit-account"><div class="limit-account-name">${account}</div>${
+          errorNote || '<div class="limit-empty">carregando...</div>'
+        }</div>`;
       }
-      const u = entry.data;
-      if (!u) return `<div class="limit-account"><div class="limit-account-name">${account}</div><div class="limit-empty">carregando...</div></div>`;
 
       const fiveHour = u.five_hour || {};
       const weekly = u.seven_day || {};
@@ -293,6 +336,7 @@ function renderLimits() {
           ${renderLimitRow('Semanal', weekly.utilization, weekly.resets_at)}
           ${scopedName ? renderLimitRow(`Semanal · ${scopedName}`, scoped.percent, scoped.resets_at) : ''}
           ${creditsHtml}
+          ${errorNote}
         </div>`;
     })
     .join('');
@@ -314,4 +358,4 @@ tick();
 setInterval(tick, 3000);
 
 refreshUsageAll().then(renderLimits);
-setInterval(() => refreshUsageAll().then(renderLimits), USAGE_REFRESH_MS);
+setInterval(() => refreshUsageAll().then(renderLimits), USAGE_CHECK_INTERVAL_MS);
