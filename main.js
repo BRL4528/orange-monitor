@@ -9,7 +9,7 @@ const ICON_PATH = path.join(__dirname, 'assets', 'icon.png');
 function createWindow() {
   const { width: sw } = screen.getPrimaryDisplay().workAreaSize;
   const width = 300;
-  const height = 460;
+  const height = 620;
 
   win = new BrowserWindow({
     width,
