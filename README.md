@@ -6,7 +6,7 @@ Widget flutuante (Electron) tema dark/orange, fonte Fira Code. Mostra:
 - Tokens do Claude Code (hoje e total, via `~/.claude/stats-cache.json`)
 - Consumo da Central de Agentes: tokens ao vivo por workspace e processos/CPU dos agentes ativos (via `~/.local/share/central-agentes/consumo-workspaces.json`)
 
-Janela sem borda, sempre no topo, arrastável, atualiza a cada 3s.
+Janela sem borda, sempre no topo, arrastável, atualiza a cada 3s. Ícone na bandeja do sistema (clique: mostrar/ocultar; menu: Mostrar/Ocultar e Sair). O botão × da janela apenas oculta — para fechar de vez, use "Sair" no menu da bandeja.
 
 ## Uso
 
