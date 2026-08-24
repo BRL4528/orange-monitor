@@ -53,9 +53,18 @@
       <div id="agents-list" class="agents-list"></div>
     </section>
 
-    <section class="panel grow">
+    <section class="panel">
       <h2>Limites Anthropic</h2>
       <div id="limits-container" class="limits-container"></div>
+    </section>
+
+    <section id="slack-panel" class="panel grow hidden">
+      <h2>Slack · <span id="slack-contact-name">--</span></h2>
+      <div id="slack-messages" class="slack-messages"></div>
+      <div class="slack-compose">
+        <input id="slack-input" class="slack-input" type="text" placeholder="responder..." />
+        <button id="slack-send" class="slack-send-btn">➤</button>
+      </div>
     </section>
 
     <div class="footer" id="updated">atualizando...</div>

@@ -27,6 +27,10 @@ const USAGE_BASE_BACKOFF_MS = 5 * 60_000; // 1a espera após 429
 const USAGE_MAX_BACKOFF_MS = 30 * 60_000; // teto do backoff (429 desse endpoint é conhecido por travar por horas)
 const usageState = new Map(); // account -> { data, error, fetchedAt, nextAttemptAt, backoffMs }
 
+const SLACK_CONFIG_PATH = path.join(os.homedir(), '.config', 'orange-monitor', 'slack.json');
+const SLACK_REFRESH_MS = 20_000;
+let slackConfig = readJson(SLACK_CONFIG_PATH);
+
 function readJson(filePath) {
   try {
     return JSON.parse(fs.readFileSync(filePath, 'utf8'));
@@ -243,6 +247,98 @@ document.getElementById('spotify-prev').addEventListener('click', () => spotifyC
 document.getElementById('spotify-playpause').addEventListener('click', () => spotifyControl('PlayPause'));
 document.getElementById('spotify-next').addEventListener('click', () => spotifyControl('Next'));
 
+function slackApi(method, params) {
+  return new Promise((resolve) => {
+    const body = new URLSearchParams(params).toString();
+    const req = https.request(
+      {
+        hostname: 'slack.com',
+        path: `/api/${method}`,
+        method: 'POST',
+        timeout: 8000,
+        headers: {
+          Authorization: `Bearer ${slackConfig.token}`,
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Content-Length': Buffer.byteLength(body)
+        }
+      },
+      (res) => {
+        let data = '';
+        res.on('data', (c) => (data += c));
+        res.on('end', () => {
+          try {
+            resolve(JSON.parse(data));
+          } catch {
+            resolve({ ok: false, error: 'resposta inválida' });
+          }
+        });
+      }
+    );
+    req.on('timeout', () => req.destroy());
+    req.on('error', () => resolve({ ok: false, error: 'network_error' }));
+    req.end(body);
+  });
+}
+
+function fmtSlackTime(ts) {
+  const d = new Date(Number(ts) * 1000);
+  return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+}
+
+async function updateSlack() {
+  if (!slackConfig) return;
+
+  const listEl = document.getElementById('slack-messages');
+  const result = await slackApi('conversations.history', {
+    channel: slackConfig.contact.channelId,
+    limit: 8
+  });
+
+  if (!result.ok) {
+    listEl.innerHTML = `<div class="limit-empty">indisponível: ${result.error}</div>`;
+    return;
+  }
+
+  const messages = [...result.messages].reverse();
+  listEl.innerHTML = messages
+    .map((m) => {
+      const mine = m.user === slackConfig.selfUserId;
+      const who = mine ? 'você' : slackConfig.contact.name;
+      const text = (m.text || '[sem texto]').replace(/</g, '&lt;');
+      return `<div class="slack-msg ${mine ? 'slack-msg-mine' : ''}"><div class="slack-msg-head"><span>${who}</span><span>${fmtSlackTime(m.ts)}</span></div><div class="slack-msg-text">${text}</div></div>`;
+    })
+    .join('');
+  listEl.scrollTop = listEl.scrollHeight;
+}
+
+async function sendSlackReply() {
+  if (!slackConfig) return;
+  const input = document.getElementById('slack-input');
+  const text = input.value.trim();
+  if (!text) return;
+
+  input.disabled = true;
+  const result = await slackApi('chat.postMessage', {
+    channel: slackConfig.contact.channelId,
+    text
+  });
+  input.disabled = false;
+
+  if (result.ok) {
+    input.value = '';
+    updateSlack();
+  }
+}
+
+if (slackConfig) {
+  document.getElementById('slack-panel').classList.remove('hidden');
+  document.getElementById('slack-contact-name').textContent = slackConfig.contact.name;
+  document.getElementById('slack-send').addEventListener('click', sendSlackReply);
+  document.getElementById('slack-input').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') sendSlackReply();
+  });
+}
+
 function listClaudeAccounts() {
   try {
     return fs
@@ -430,3 +526,8 @@ setInterval(tick, 3000);
 
 refreshUsageAll().then(renderLimits);
 setInterval(() => refreshUsageAll().then(renderLimits), USAGE_CHECK_INTERVAL_MS);
+
+if (slackConfig) {
+  updateSlack();
+  setInterval(updateSlack, SLACK_REFRESH_MS);
+}

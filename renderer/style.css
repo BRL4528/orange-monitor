@@ -219,6 +219,79 @@ html, body {
   color: #f0ead666;
 }
 
+.hidden { display: none !important; }
+
+#slack-panel.grow {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+#slack-panel h2 { flex: 0 0 auto; }
+
+.slack-messages {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.slack-msg {
+  font-size: 11px;
+  padding: 4px 7px;
+  border-radius: 6px;
+  background: #ffffff08;
+  border-left: 2px solid #ff8c1a55;
+  max-width: 90%;
+}
+.slack-msg-mine {
+  align-self: flex-end;
+  border-left: none;
+  border-right: 2px solid #ff8c1a;
+  background: #ff8c1a14;
+}
+.slack-msg-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 9px;
+  color: #f0ead666;
+  margin-bottom: 2px;
+}
+.slack-msg-text {
+  color: #f0ead6dd;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.slack-compose {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 6px;
+}
+.slack-input {
+  flex: 1;
+  background: #ffffff08;
+  border: 1px solid #ff8c1a33;
+  border-radius: 6px;
+  color: #f0ead6;
+  padding: 5px 8px;
+  font-family: inherit;
+  font-size: 11px;
+  -webkit-app-region: no-drag;
+}
+.slack-input:focus { outline: none; border-color: #ff8c1a88; }
+.slack-send-btn {
+  -webkit-app-region: no-drag;
+  background: #ff8c1a22;
+  border: 1px solid #ff8c1a55;
+  color: #ffbf5c;
+  border-radius: 6px;
+  width: 32px;
+  cursor: pointer;
+}
+.slack-send-btn:hover { background: #ff8c1a33; }
+
 .footer {
   padding: 5px 12px;
   font-size: 9px;

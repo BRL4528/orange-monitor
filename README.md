@@ -6,6 +6,22 @@ Widget flutuante (Electron) tema dark/orange, fonte Fira Code. Mostra:
 - Tokens do Claude Code (hoje e total, via `~/.claude/stats-cache.json`)
 - Consumo da Central de Agentes: tokens ao vivo por workspace/conta e processos/CPU dos agentes ativos (via `~/.local/share/central-agentes/consumo-workspaces.json`)
 - Limites Anthropic por conta (5 horas, semanal, semanal por modelo e créditos), com contagem de quanto falta para reiniciar. Descobre as contas em `~/.config/central-agentes/contas/claude/*` e consulta `GET https://api.anthropic.com/api/oauth/usage` com o token OAuth já salvo localmente por cada conta. O token nunca é enviado a nenhum lugar além da própria Anthropic; a consulta é refeita a cada 5min (esse endpoint é [conhecido por travar em 429 por horas](https://github.com/anthropics/claude-code/issues/31021) se martelado — em caso de 429 o widget espera 5min e dobra a cada falha repetida, até 30min, mostrando "tenta de novo em Xmin" e mantendo o último dado bom conhecido na tela).
+- Controle do Spotify (Play/Pause, Anterior, Próxima) via D-Bus/MPRIS — não usa a API do Spotify, só fala com o app local. Requer o Spotify desktop aberto.
+- DMs do Slack com um único contato (painel só aparece se o config existir) — lê e responde a conversa direta com uma pessoa específica.
+
+### Config do Slack (opcional)
+
+Cria `~/.config/orange-monitor/slack.json` (fora do repo, nunca sobe pro git):
+
+```json
+{
+  "token": "xoxp-...",
+  "selfUserId": "SEU_USER_ID",
+  "contact": { "name": "Nome Exibido", "userId": "USER_ID_DO_CONTATO", "channelId": "ID_DO_CANAL_DM" }
+}
+```
+
+O token precisa ser um **User OAuth Token** (`xoxp-`, não `xoxb-`) de um Slack App com os User Token Scopes: `im:history`, `im:read`, `chat:write`, `users:read`, `channels:read`. Para achar `channelId`, liste `conversations.list` (types=im) com esse token e ache o item cujo `user` é o `userId` do contato.
 
 Janela sem borda, sempre no topo, arrastável, atualiza a cada 3s. Ícone na bandeja do sistema (clique: mostrar/ocultar; menu: Mostrar/Ocultar e Sair). O botão × da janela apenas oculta — para fechar de vez, use "Sair" no menu da bandeja.
 
