@@ -393,6 +393,7 @@ async function sendSlackReply() {
     text
   });
   input.disabled = false;
+  input.focus();
 
   if (result.ok) {
     input.value = '';
