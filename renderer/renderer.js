@@ -3,6 +3,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const https = require('https');
+const { execFile } = require('child_process');
 const si = require('systeminformation');
 
 document.getElementById('btn-close').addEventListener('click', () => {
@@ -171,6 +172,76 @@ async function updateAgentProcesses() {
   document.getElementById('agents-procs').textContent = String(matches.length);
   document.getElementById('agents-cpu').textContent = `${cpuSum.toFixed(0)}%`;
 }
+
+const SPOTIFY_DEST = 'org.mpris.MediaPlayer2.spotify';
+const SPOTIFY_PATH = '/org/mpris/MediaPlayer2';
+
+function dbusSend(args) {
+  return new Promise((resolve) => {
+    execFile('dbus-send', args, { timeout: 3000 }, (err, stdout) => {
+      resolve({ ok: !err, stdout: stdout || '' });
+    });
+  });
+}
+
+function extractQuotedAfter(text, key) {
+  const re = new RegExp(`string "${key}"[\\s\\S]*?string "([^"]*)"`);
+  const m = text.match(re);
+  return m ? m[1] : null;
+}
+
+function lastQuotedString(text) {
+  const all = [...text.matchAll(/string "([^"]*)"/g)];
+  return all.length ? all[all.length - 1][1] : null;
+}
+
+async function spotifyControl(method) {
+  await dbusSend(['--print-reply', `--dest=${SPOTIFY_DEST}`, SPOTIFY_PATH, `org.mpris.MediaPlayer2.Player.${method}`]);
+  setTimeout(updateSpotify, 400);
+}
+
+async function updateSpotify() {
+  const titleEl = document.getElementById('spotify-title');
+  const artistEl = document.getElementById('spotify-artist');
+  const btnPlay = document.getElementById('spotify-playpause');
+
+  const statusRes = await dbusSend([
+    '--print-reply',
+    `--dest=${SPOTIFY_DEST}`,
+    SPOTIFY_PATH,
+    'org.freedesktop.DBus.Properties.Get',
+    'string:org.mpris.MediaPlayer2.Player',
+    'string:PlaybackStatus'
+  ]);
+
+  if (!statusRes.ok) {
+    titleEl.textContent = 'Spotify não está aberto';
+    artistEl.textContent = '';
+    btnPlay.textContent = '▶';
+    return;
+  }
+
+  const status = lastQuotedString(statusRes.stdout) || 'Stopped';
+  btnPlay.textContent = status === 'Playing' ? '⏸' : '▶';
+
+  const metaRes = await dbusSend([
+    '--print-reply',
+    `--dest=${SPOTIFY_DEST}`,
+    SPOTIFY_PATH,
+    'org.freedesktop.DBus.Properties.Get',
+    'string:org.mpris.MediaPlayer2.Player',
+    'string:Metadata'
+  ]);
+
+  if (metaRes.ok) {
+    titleEl.textContent = extractQuotedAfter(metaRes.stdout, 'xesam:title') || '--';
+    artistEl.textContent = extractQuotedAfter(metaRes.stdout, 'xesam:artist') || '';
+  }
+}
+
+document.getElementById('spotify-prev').addEventListener('click', () => spotifyControl('Previous'));
+document.getElementById('spotify-playpause').addEventListener('click', () => spotifyControl('PlayPause'));
+document.getElementById('spotify-next').addEventListener('click', () => spotifyControl('Next'));
 
 function listClaudeAccounts() {
   try {
@@ -344,7 +415,7 @@ function renderLimits() {
 
 async function tick() {
   try {
-    await Promise.all([updateSystem(), updateAgentProcesses()]);
+    await Promise.all([updateSystem(), updateAgentProcesses(), updateSpotify()]);
     updateClaudeTokens();
     updateAgentsConsumption();
     renderLimits();

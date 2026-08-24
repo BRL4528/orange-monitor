@@ -149,6 +149,44 @@ html, body {
 }
 .agent-item b { color: #ffbf5c; }
 
+.spotify-track { margin-bottom: 8px; }
+.spotify-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #ffd9a8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.spotify-artist {
+  font-size: 10px;
+  color: #f0ead688;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.spotify-controls {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+.spotify-btn {
+  -webkit-app-region: no-drag;
+  background: #ffffff08;
+  border: 1px solid #ff8c1a33;
+  color: #ffbf5c;
+  border-radius: 6px;
+  width: 36px;
+  height: 28px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.spotify-btn:hover { background: #ff8c1a22; }
+.spotify-btn-main {
+  border-color: #ff8c1a88;
+  color: #ff8c1a;
+}
+
 .limits-container {
   display: flex;
   flex-direction: column;
