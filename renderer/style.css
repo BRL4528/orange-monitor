@@ -250,6 +250,23 @@ html, body {
   border-right: 2px solid #ff8c1a;
   background: #ff8c1a14;
 }
+.slack-file-chip {
+  -webkit-app-region: no-drag;
+  margin-top: 4px;
+  display: inline-block;
+  font-size: 10px;
+  padding: 3px 8px;
+  border-radius: 5px;
+  background: #ffffff10;
+  border: 1px solid #ff8c1a44;
+  color: #ffbf5c;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+.slack-file-chip:hover { background: #ff8c1a22; }
 .slack-msg-head {
   display: flex;
   justify-content: space-between;

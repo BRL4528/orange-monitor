@@ -21,7 +21,9 @@ Cria `~/.config/orange-monitor/slack.json` (fora do repo, nunca sobe pro git):
 }
 ```
 
-O token precisa ser um **User OAuth Token** (`xoxp-`, não `xoxb-`) de um Slack App com os User Token Scopes: `im:history`, `im:read`, `chat:write`, `users:read`, `channels:read`. Para achar `channelId`, liste `conversations.list` (types=im) com esse token e ache o item cujo `user` é o `userId` do contato.
+O token precisa ser um **User OAuth Token** (`xoxp-`, não `xoxb-`) de um Slack App com os User Token Scopes: `im:history`, `im:read`, `chat:write`, `users:read`, `channels:read`, `files:read` (esse último é exigido pra baixar anexo, senão o link privado redireciona pra tela de login). Para achar `channelId`, liste `conversations.list` (types=im) com esse token e ache o item cujo `user` é o `userId` do contato.
+
+Mensagens com arquivo aparecem como um chip com o nome — clicar baixa em `~/Downloads/` (ou na home, se não existir) e copia o caminho local pro clipboard. Não faz preview de conteúdo.
 
 Janela sem borda, sempre no topo, arrastável, atualiza a cada 3s. Ícone na bandeja do sistema (clique: mostrar/ocultar; menu: Mostrar/Ocultar e Sair). O botão × da janela apenas oculta — para fechar de vez, use "Sair" no menu da bandeja.
 

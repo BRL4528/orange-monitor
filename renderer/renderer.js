@@ -1,4 +1,4 @@
-const { ipcRenderer } = require('electron');
+const { ipcRenderer, clipboard } = require('electron');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
@@ -285,6 +285,62 @@ function fmtSlackTime(ts) {
   return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 }
 
+const slackFilesRegistry = new Map(); // idx -> { url, name }
+
+function downloadDestPath(name) {
+  const downloadsDir = fs.existsSync(path.join(os.homedir(), 'Downloads'))
+    ? path.join(os.homedir(), 'Downloads')
+    : os.homedir();
+  const safeName = name.replace(/[/\\]/g, '_');
+  let dest = path.join(downloadsDir, safeName);
+  const ext = path.extname(safeName);
+  const base = safeName.slice(0, safeName.length - ext.length);
+  let n = 1;
+  while (fs.existsSync(dest)) {
+    dest = path.join(downloadsDir, `${base} (${n})${ext}`);
+    n += 1;
+  }
+  return dest;
+}
+
+function downloadSlackFile(url, name) {
+  return new Promise((resolve, reject) => {
+    const dest = downloadDestPath(name);
+    const file = fs.createWriteStream(dest);
+    https
+      .get(url, { headers: { Authorization: `Bearer ${slackConfig.token}` } }, (res) => {
+        if (res.statusCode !== 200) {
+          file.close();
+          fs.unlink(dest, () => {});
+          return reject(new Error(`HTTP ${res.statusCode}`));
+        }
+        res.pipe(file);
+        file.on('finish', () => file.close(() => resolve(dest)));
+      })
+      .on('error', reject);
+  });
+}
+
+document.getElementById('slack-messages').addEventListener('click', async (e) => {
+  const chip = e.target.closest('.slack-file-chip');
+  if (!chip) return;
+  const entry = slackFilesRegistry.get(chip.dataset.fileIdx);
+  if (!entry) return;
+
+  const originalLabel = chip.textContent;
+  chip.textContent = '⏳ baixando...';
+  try {
+    const dest = await downloadSlackFile(entry.url, entry.name);
+    clipboard.writeText(dest);
+    chip.textContent = '✓ copiado!';
+  } catch {
+    chip.textContent = '✗ falhou';
+  }
+  setTimeout(() => {
+    chip.textContent = originalLabel;
+  }, 1800);
+});
+
 async function updateSlack() {
   if (!slackConfig) return;
 
@@ -299,13 +355,27 @@ async function updateSlack() {
     return;
   }
 
+  slackFilesRegistry.clear();
+  let fileIdx = 0;
+
   const messages = [...result.messages].reverse();
   listEl.innerHTML = messages
     .map((m) => {
       const mine = m.user === slackConfig.selfUserId;
       const who = mine ? 'você' : slackConfig.contact.name;
-      const text = (m.text || '[sem texto]').replace(/</g, '&lt;');
-      return `<div class="slack-msg ${mine ? 'slack-msg-mine' : ''}"><div class="slack-msg-head"><span>${who}</span><span>${fmtSlackTime(m.ts)}</span></div><div class="slack-msg-text">${text}</div></div>`;
+
+      const filesHtml = (m.files || [])
+        .map((f) => {
+          const idx = String(fileIdx++);
+          slackFilesRegistry.set(idx, { url: f.url_private_download || f.url_private, name: f.name });
+          const safeName = (f.name || 'arquivo').replace(/</g, '&lt;');
+          return `<div class="slack-file-chip" data-file-idx="${idx}" title="baixar e copiar caminho">📄 ${safeName}</div>`;
+        })
+        .join('');
+
+      const textHtml = m.text ? `<div class="slack-msg-text">${m.text.replace(/</g, '&lt;')}</div>` : '';
+
+      return `<div class="slack-msg ${mine ? 'slack-msg-mine' : ''}"><div class="slack-msg-head"><span>${who}</span><span>${fmtSlackTime(m.ts)}</span></div>${textHtml}${filesHtml}</div>`;
     })
     .join('');
   listEl.scrollTop = listEl.scrollHeight;
